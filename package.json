@@ -1,0 +1,25 @@
+{
+  "name": "restaurant-kds",
+  "version": "1.0.0",
+  "description": "Real-time Kitchen Display System — WhatsApp ordering + thermal printing",
+  "private": true,
+  "workspaces": [
+    "server",
+    "dashboard",
+    "printer-worker"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w dashboard\"",
+    "build": "npm run build -w dashboard && npm run build -w server",
+    "test": "npm run test -w server && npm run test -w dashboard",
+    "lint": "npm run lint -w server && npm run lint -w dashboard && npm run lint -w printer-worker",
+    "format": "prettier --write \"**/*.{js,ts,vue,json,md}\" --ignore-path .gitignore"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "prettier": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

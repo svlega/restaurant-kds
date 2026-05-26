@@ -1,0 +1,14 @@
+services:
+  server:
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: staging
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+
+  # Disable nginx and certbot — WordPress already owns ports 80/443 on this host
+  nginx:
+    profiles: ["disabled"]
+
+  certbot:
+    profiles: ["disabled"]

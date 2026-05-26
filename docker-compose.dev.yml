@@ -1,0 +1,24 @@
+services:
+  server:
+    build:
+      target: builder  # use builder stage which has devDeps
+    command: npm run dev --workspace=server
+    volumes:
+      - ./server/src:/app/server/src  # hot-reload server source
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      NODE_ENV: development
+
+  dashboard:
+    image: node:20-alpine
+    container_name: cordial-dashboard-dev
+    working_dir: /app
+    command: npm run dev --workspace=dashboard -- --host
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3000

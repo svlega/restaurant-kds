@@ -1,0 +1,106 @@
+name: CI / CD
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Lint & Test ──────────────────────────────────────────────────────────────
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint server
+        run: npm run lint --workspace=server
+
+      - name: Test server
+        run: npm run test --workspace=server
+
+      - name: Lint dashboard
+        run: npm run lint --workspace=dashboard
+
+      - name: Test dashboard
+        run: npm run test --workspace=dashboard
+
+      - name: Build dashboard
+        run: npm run build --workspace=dashboard
+
+  # ── Deploy to Staging (push to staging branch) ───────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging (Server A)
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key:      ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/cordial-kds-staging
+
+            echo "→ Pulling latest code"
+            git pull origin staging
+
+            echo "→ Rebuilding and restarting containers"
+            docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --build --remove-orphans
+
+            echo "→ Cleaning up old images"
+            docker image prune -f
+
+            echo "✅ Staging deploy complete"
+
+  # ── Deploy to Production (push to main, after tests pass) ────────────────────
+  deploy:
+    name: Deploy to Production (Server B)
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key:      ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/cordial-kds
+
+            echo "→ Pulling latest code"
+            git fetch origin && git reset --hard origin/main
+
+            echo "→ Rebuilding Docker"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+              up -d --build --remove-orphans
+
+            echo "→ Health check"
+            sleep 5
+            curl -f http://localhost:3001/health || exit 1
+
+            echo "→ Cleaning up old images"
+            docker image prune -f
+
+            echo "✅ Production deploy complete"

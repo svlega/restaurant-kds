@@ -1,0 +1,23 @@
+{
+  "name": "@cordial-kds/printer-worker",
+  "version": "1.0.0",
+  "description": "Raspberry Pi thermal printer agent — polls server for print jobs",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "lint": "eslint src --ext .js"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "dotenv": "^16.4.5",
+    "iconv-lite": "^0.6.3"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
